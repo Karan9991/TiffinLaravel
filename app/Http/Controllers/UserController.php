@@ -12,24 +12,10 @@ class UserController extends Controller
 {
     public function register(Request $request)
     {
-        // $user = new User();
-        // $user->name = $request->input('name');
-        // $user->email = $request->input('email');
-        // $user->password = Hash::make($request->input('password'));
-        // $user->address = $request->input('address');
-        // $user->user_type = $request->input('user_type');
-        // $user->save();
 
-        // // Return a response with the newly created user's data
-        // return response()->json([
-        //     'success' => true,
-        //     'user' => $user
-        // ], 201);
         $validator = Validator::make($request->all(), [
-            'name' => 'required',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:8',
-            'address' => 'nullable',
             'user_type' => 'nullable',
         ]);
 
@@ -38,16 +24,14 @@ class UserController extends Controller
         }
 
         $user = User::create([
-            'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
-            'address' => $request->address,
             'user_type' => $request->user_type,
         ]);
 
         return response()->json(['message' => 'User created successfully', 'user' => $user], 201);
     }
-
+    
 
     public function login(Request $request)
     {
@@ -55,7 +39,7 @@ class UserController extends Controller
 
         if (Auth::attempt($credentials)) {
             $user = User::where('email', $credentials['email'])->first();
-            $token = $user->createToken('authToken')->accessToken;
+            $token = $request->user()->createToken('auth_token')->plainTextToken;
             return response()->json([
                 'success' => true,
                 'message' => 'Login successful!',
@@ -69,4 +53,61 @@ class UserController extends Controller
             ]);
         }
     }
+
+    public function logout(Request $request)
+{
+    $request->user()->currentAccessToken()->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Logout successful!',
+    ]);
+}
+
+public function getUserById($id)
+{
+    $user = User::find($id);
+
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'User not found'
+        ], 404);
+    }
+
+    return response()->json([
+        'success' => true,
+        'data' => $user
+    ]);
+}
+
+    public function getAllUsers()
+    {
+        $user = User::all();
+
+        return response()->json([
+            'success' => true,
+            'data' => $user
+        ]);
+    }
+
+    public function getAllCustomers()
+{
+    $customers = User::where('user_type', 'Customer')->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => $customers
+    ]);
+}
+public function getAllSellers()
+{
+    $customers = User::where('user_type', 'Seller')->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => $customers
+    ]);
+}
+
 }
